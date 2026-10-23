@@ -1,0 +1,10 @@
+/* NandiphaM brand: rose, soft blush, white and deep plum. */
+:root{--ink:#432139;--ink2:#5c304b;--ink3:#75445f;--teal:#b52c68;--teal-d:#94214f;--teal-l:#fcebf3;--paper:#fffcfd;--surface:#fcf5f8;--surface2:#f7e8ef;--t1:#382330;--t2:#705363;--t3:#8f7181;--line:#efdee6;--line2:#dec2cf;--green:#087b55;--green-bg:#e7f6f0}
+.setup-notice{padding:10px 18px;text-align:center;font-size:13px;line-height:1.5;background:#fcebf3;color:#792146;border-bottom:1px solid #efd0df}
+.public-brand img,.login-wordmark{object-fit:contain}
+.workspace-sidebar{border-color:#efdee6!important}
+.workspace-shell .btn-primary{background:#b52c68;color:#fff}
+.workspace-shell .btn-primary:hover{background:#94214f}
+.workspace-shell{background:#fcf5f8}
+button:focus-visible,a:focus-visible,input:focus-visible{outline-color:#b52c68}
+::selection{background:#f3bfd6;color:#432139}

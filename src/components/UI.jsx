@@ -1,0 +1,576 @@
+import { barcodeSvg } from '../lib/barcode'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { Flashlight, FlashlightOff } from 'lucide-react'
+import { format, formatDistanceToNow } from 'date-fns'
+import { Icons } from './Icons'
+import { generateQR } from '../lib/qr'
+
+// Re-export the icon set so pages can import from one place
+export { Icons } from './Icons'
+
+const STATUS_META = {
+  in_warehouse: { label: 'In Warehouse', cls: 'pill-warehouse', Icon: Icons.warehouse, color: 'var(--blue)' },
+  in_transit:   { label: 'In Transit',   cls: 'pill-transit',   Icon: Icons.ship,      color: 'var(--amber)' },
+  delivered:    { label: 'Delivered',    cls: 'pill-delivered',  Icon: Icons.check,     color: 'var(--green)' },
+  loading:      { label: 'Loading',      cls: 'pill-loading',    Icon: Icons.box,       color: 'var(--blue)' },
+}
+// Backward-compatible STATUS export (keeps .label/.cls; adds .Icon)
+export const STATUS = STATUS_META
+
+export function StatusPill({ status }) {
+  const s = STATUS_META[status] || { label: status, cls: '', Icon: null, color: 'var(--t2)' }
+  return <span className={`pill ${s.cls}`}>{s.Icon && <s.Icon size={12} color={s.color} />}{s.label}</span>
+}
+export function TypePill({ type }) {
+  const air = type === 'air'
+  const Icon = air ? Icons.plane : Icons.ship
+  return <span className={`pill ${air ? 'pill-air' : 'pill-sea'}`}><Icon size={12} color={air ? 'var(--violet)' : 'var(--blue)'} />{air ? 'Air' : 'Sea'}</span>
+}
+
+// Real scannable QR code (no dependency)
+export function QRCode({ value, size = 96, fg = '#0A1628', bg = '#FFFFFF', quiet = 2 }) {
+  const matrix = useMemo(() => generateQR(value || '—'), [value])
+  if (!matrix) return null
+  const n = matrix.length, total = n + quiet * 2, cell = size / total
+  const rects = []
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (matrix[r][c])
+    rects.push(<rect key={`${r}-${c}`} x={(c + quiet) * cell} y={(r + quiet) * cell} width={cell + 0.5} height={cell + 0.5} fill={fg} />)
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} shapeRendering="crispEdges" style={{ display: 'block', borderRadius: 6 }}>
+      <rect width={size} height={size} fill={bg} />{rects}
+    </svg>
+  )
+}
+
+export function Avatar({ name = '', size = 36, style = {} }) {
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  return (
+    <div className="avatar" style={{ width: size, height: size, fontSize: size * 0.36, ...style }}>
+      {initials || '?'}
+    </div>
+  )
+}
+
+export function Modal({ open, title, onClose, children, className = '' }) {
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+  if (!open) return null
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={`modal-sheet ${className}`.trim()}>
+        <div className="modal-handle" />
+        <div className="modal-header">
+          <span className="modal-title">{title}</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function Input({ label, error, ...props }) {
+  return (
+    <div className="input-group">
+      {label && <label className="input-label">{label}</label>}
+      <input className={`input-field ${error ? 'error' : ''}`} {...props} />
+      {error && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4 }}>{error}</div>}
+    </div>
+  )
+}
+export function Textarea({ label, ...props }) {
+  return (
+    <div className="input-group">
+      {label && <label className="input-label">{label}</label>}
+      <textarea className="input-field" {...props} />
+    </div>
+  )
+}
+export function Select({ label, children, ...props }) {
+  return (
+    <div className="input-group">
+      {label && <label className="input-label">{label}</label>}
+      <select className="input-field" {...props}>{children}</select>
+    </div>
+  )
+}
+
+export function InputWithScan({ label, onScanClick, inputRef, ...props }) {
+  return (
+    <div className="input-group">
+      {label && <label className="input-label">{label}</label>}
+      <div className="input-scan-row">
+        <input ref={inputRef} className="input-field" style={{ margin: 0 }} {...props} />
+        <button type="button" className="scan-trigger" onClick={onScanClick} title="Scan barcode / QR">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
+            <rect x="7" y="7" width="3" height="10" rx="1"/>
+            <rect x="14" y="7" width="3" height="10" rx="1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export function ScannerModal({ open, onClose, onResult, title = 'Scan QR or Barcode' }) {
+  const [manual, setManual] = useState('')
+  const [camError, setCamError] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [torchOn, setTorchOn] = useState(false)
+  const [torchChanging, setTorchChanging] = useState(false)
+  const [torchError, setTorchError] = useState('')
+  const html5Ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    setManual(''); setCamError(''); setScanning(false); setTorchOn(false); setTorchChanging(false); setTorchError('')
+    let scanner
+    let cancelled = false
+    const start = async () => {
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode')
+        if (cancelled) return
+        scanner = new Html5Qrcode('oa-qr-box')
+        html5Ref.current = scanner
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 150 } },
+          (decoded) => { stopScan(); onResult(decoded.trim()); onClose() },
+          () => {}
+        )
+        if (cancelled) { await scanner.stop(); scanner.clear(); return }
+        setScanning(true)
+      } catch {
+        setCamError('Camera not available — type or paste below.')
+      }
+    }
+    const t = setTimeout(start, 300)
+    return () => { cancelled = true; clearTimeout(t); stopScan() }
+  }, [open])
+
+  const stopScan = async () => {
+    try {
+      if (html5Ref.current?.isScanning) { await html5Ref.current.stop(); html5Ref.current.clear() }
+    } catch {}
+  }
+  const handleClose = () => { stopScan(); onClose() }
+  const confirm = () => { if (!manual.trim()) return; stopScan(); onResult(manual.trim()); onClose() }
+  const toggleTorch = async () => {
+    const scanner = html5Ref.current
+    if (!scanner?.isScanning || torchChanging) return
+
+    const nextTorchState = !torchOn
+    setTorchChanging(true)
+    setTorchError('')
+    try {
+      await scanner.applyVideoConstraints({ advanced: [{ torch: nextTorchState }] })
+      setTorchOn(nextTorchState)
+    } catch {
+      setTorchError('Flashlight is not available on this camera.')
+    } finally {
+      setTorchChanging(false)
+    }
+  }
+
+  if (!open) return null
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && handleClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div className="modal-header">
+          <span className="modal-title">{title}</span>
+          <button className="modal-close" onClick={handleClose}>✕</button>
+        </div>
+        <div style={{ borderRadius: 12, overflow: 'hidden', background: '#111', minHeight: 180, marginBottom: 16, position: 'relative' }}>
+          <div id="oa-qr-box" style={{ width: '100%' }} />
+          {scanning && (
+            <button
+              type="button"
+              className={`scanner-torch ${torchOn ? 'is-on' : ''}`}
+              onClick={toggleTorch}
+              disabled={torchChanging}
+              aria-pressed={torchOn}
+              title={torchOn ? 'Turn flashlight off' : 'Turn flashlight on'}
+            >
+              {torchOn ? <FlashlightOff size={17} /> : <Flashlight size={17} />}
+              <span>{torchOn ? 'Light on' : 'Light'}</span>
+            </button>
+          )}
+          {!scanning && !camError && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 13 }}>
+              Starting camera…
+            </div>
+          )}
+          {torchError && <div className="scanner-torch-message">{torchError}</div>}
+        </div>
+        {camError && <div className="banner banner-warn">{camError}</div>}
+        <div className="divider-text">or enter manually</div>
+        <div className="input-group">
+          <label className="input-label">Tracking No / Shipping Mark / Phone</label>
+          <input className="input-field" placeholder="Paste or type here…" value={manual}
+            onChange={e => setManual(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirm()} autoFocus />
+        </div>
+        <button className="btn btn-primary btn-full" onClick={confirm} disabled={!manual.trim()}>Confirm</button>
+      </div>
+    </div>
+  )
+}
+
+export function CBMCalculator({ value, onChange }) {
+  const l = parseFloat(value.length_cm) || 0
+  const w = parseFloat(value.width_cm) || 0
+  const h = parseFloat(value.height_cm) || 0
+  const quantity = Math.max(1, parseInt(value.quantity, 10) || 1)
+  const singleCbm = l && w && h ? (l * w * h / 1_000_000) : null
+  const cbm = singleCbm ? (singleCbm * quantity).toFixed(4) : null
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label className="input-label">Carton Measurements (cm) - total CBM auto-calculated</label>
+      <div className="measure-row" style={{ marginBottom: 8 }}>
+        {[['length_cm','L'],['width_cm','W'],['height_cm','H']].map(([f, lbl]) => (
+          <div key={f}>
+            <label className="input-label" style={{ fontSize: 10, textAlign: 'center', display: 'block' }}>{lbl} (cm)</label>
+            <input className="input-field" type="number" min="0" step="0.1" placeholder="0"
+              value={value[f] || ''} onChange={e => onChange({ ...value, [f]: e.target.value })}
+              style={{ textAlign: 'center', padding: '10px 6px' }} />
+          </div>
+        ))}
+      </div>
+      {cbm && (
+        <div className="cbm-result">
+          <div className="cbm-result-value">{cbm} m3</div>
+          <div className="cbm-result-label">= {l} x {w} x {h} x {quantity} carton{quantity === 1 ? '' : 's'} / 1,000,000</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function PhotoUploader({ photos = [], onAdd, onRemove, uploading }) {
+  const galleryRef = useRef()
+  const cameraRef = useRef()
+  const addFiles = event => {
+    const files = Array.from(event.target.files || [])
+    if (files.length) onAdd(files)
+    event.target.value = ''
+  }
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label className="input-label">Photos</label>
+      <div className="photo-grid">
+        {photos.map((url, i) => (
+          <div key={i} className="photo-thumb">
+            {url.startsWith('http') || url.startsWith('blob')
+              ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontSize: 28 }}>{url}</span>}
+            <button onClick={() => onRemove(i)} style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.65)', border: 'none', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </div>
+        ))}
+      </div>
+      <div className="photo-upload-actions">
+        <button type="button" className="btn btn-secondary photo-upload-action" disabled={uploading} onClick={() => galleryRef.current?.click()}>
+          <span aria-hidden="true">▧</span>{uploading ? 'Uploading…' : 'Choose from phone'}
+        </button>
+        <button type="button" className="btn btn-secondary photo-upload-action" disabled={uploading} onClick={() => cameraRef.current?.click()}>
+          <span aria-hidden="true">●</span>Take photo
+        </button>
+      </div>
+      <div className="photo-upload-help">JPG, PNG or phone photos. You can select more than one image.</div>
+      <input ref={galleryRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={addFiles} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={addFiles} />
+    </div>
+  )
+}
+
+export function PhotoGallery({ photos = [], compact = false }) {
+  const [activeIndex, setActiveIndex] = useState(null)
+  const swipeStartX = useRef(null)
+  const list = (photos || []).filter(Boolean)
+  if (list.length === 0) return null
+  const active = activeIndex === null ? null : list[activeIndex]
+  const showPrevious = () => setActiveIndex(index => (index - 1 + list.length) % list.length)
+  const showNext = () => setActiveIndex(index => (index + 1) % list.length)
+  const startSwipe = event => { swipeStartX.current = event.clientX }
+  const endSwipe = event => {
+    if (swipeStartX.current === null) return
+    const distance = event.clientX - swipeStartX.current
+    swipeStartX.current = null
+    if (Math.abs(distance) < 40 || list.length < 2) return
+    if (distance < 0) showNext()
+    else showPrevious()
+  }
+
+  return (
+    <>
+      <div className={compact ? 'photo-strip' : 'photo-gallery'}>
+        {list.map((url, i) => (
+          <button key={`${url}-${i}`} className={compact ? 'photo-strip-item' : 'photo-gallery-item'} onClick={() => setActiveIndex(i)}>
+            <img src={url} alt={`Goods photo ${i + 1}`} loading="lazy" />
+          </button>
+        ))}
+      </div>
+      <Modal open={activeIndex !== null} title={`Goods Photo${activeIndex !== null ? ` ${activeIndex + 1} of ${list.length}` : ''}`} onClose={() => setActiveIndex(null)}>
+        {active && <div className="photo-viewer" onPointerDown={startSwipe} onPointerUp={endSwipe}>
+          {list.length > 1 && <button className="photo-viewer-arrow photo-viewer-prev" onClick={showPrevious} aria-label="Previous photo">‹</button>}
+          <img src={active} alt={`Goods photo ${(activeIndex || 0) + 1}`} className="photo-preview-img" />
+          {list.length > 1 && <button className="photo-viewer-arrow photo-viewer-next" onClick={showNext} aria-label="Next photo">›</button>}
+        </div>}
+      </Modal>
+    </>
+  )
+}
+
+function warehouseForShipment(settings, shipmentType) {
+  const type = shipmentType === 'air' || shipmentType === 'sea' ? shipmentType : 'sea'
+  const legacy = {
+    name: settings.china_warehouse_name,
+    address: settings.china_warehouse_address,
+    phone: settings.china_warehouse_phone,
+  }
+
+  return {
+    name: settings[`china_${type}_warehouse_name`] || legacy.name,
+    address: settings[`china_${type}_warehouse_address`] || legacy.address,
+    phone: settings[`china_${type}_warehouse_phone`] || legacy.phone,
+    heading: type === 'air' ? 'Air Freight Receiving Address' : 'Sea Freight Receiving Address',
+  }
+}
+
+function maskPhone(phone = '') {
+  const value = String(phone || '').trim()
+  if (value.length <= 4) return value || 'Phone not supplied'
+
+  const digits = value.replace(/\D/g, '')
+  if (digits.length >= 7) {
+    const visibleStart = digits.slice(0, 3)
+    const visibleEnd = digits.slice(-3)
+    return `${visibleStart}${'*'.repeat(Math.max(3, digits.length - 6))}${visibleEnd}`
+  }
+
+  return `${value.slice(0, 2)}${'*'.repeat(Math.max(3, value.length - 4))}${value.slice(-2)}`
+}
+
+export function ShippingLabel({ client, settings = {}, shipmentType }) {
+  if (!client) return null
+  const method = shipmentType === 'air' || shipmentType === 'sea' ? shipmentType : 'general'
+  const payload = `NM:${client.shipping_mark || ''}:${method}`
+  const warehouse = warehouseForShipment(settings, shipmentType)
+  const displayPhone = maskPhone(client.phone)
+  const methodLabel = method === 'air' ? 'Air Freight' : method === 'sea' ? 'Sea Freight' : 'Freight'
+
+  return (
+    <div className="shipping-label">
+      <div className="shipping-label-top">
+        <div className="shipping-label-brand">
+          <img src="/nandipham-logo.svg" alt="NandiphaM" />
+          <span>China to Botswana Logistics</span>
+        </div>
+        <div className={`shipping-label-method shipping-method-${method}`}>{methodLabel}</div>
+      </div>
+
+      <div className="shipping-label-body">
+        <div className="shipping-label-hero">
+          <div className="shipping-label-mark">
+            <span>Shipping Mark</span>
+            <strong>{client.shipping_mark}</strong>
+            <small>Write or paste this exact mark on every carton.</small>
+          </div>
+          <div className="shipping-label-barcode">
+            <img src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(barcodeSvg(payload))}`} alt={`Barcode for ${client.shipping_mark}`} />
+            <span>{client.shipping_mark} ? {methodLabel}</span>
+          </div>
+        </div>
+
+        <div className="shipping-label-details">
+          <div className="shipping-label-panel">
+            <span className="shipping-label-kicker">Client</span>
+            <strong>{client.full_name}</strong>
+            <small>{client.state || client.country || 'Botswana'} - {displayPhone}</small>
+          </div>
+          <div className="shipping-label-panel shipping-label-panel-destination">
+            <span className="shipping-label-kicker">{warehouse.heading}</span>
+            <strong>{warehouse.name || 'Receiving warehouse details pending'}</strong>
+            {warehouse.address && <small>{warehouse.address}</small>}
+            {warehouse.phone && <small className="shipping-label-phone"><Icons.phone size={13} />{warehouse.phone}</small>}
+          </div>
+        </div>
+
+        <div className="shipping-label-warning">
+          <strong>Important</strong>
+          <span>Goods without this shipping mark may be delayed, mixed up, or impossible to identify.</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function ReceiptView({ receipt, client, companyName = 'NandiphaM' }) {
+  if (!receipt) return null
+  let items = []
+  try {
+    const parsed = typeof receipt.items === 'string' ? JSON.parse(receipt.items || '[]') : receipt.items
+    items = Array.isArray(parsed) ? parsed : []
+  } catch { items = [] }
+  if (!items.length) items = [{ desc: receipt.goods?.description || 'Shipping service', qty: 1, unit_price: receipt.subtotal || receipt.total || 0 }]
+  const currency = receipt.currency || 'BWP'
+  return (
+    <div className="receipt-document">
+      <header className="receipt-header">
+        <div>
+          <div className="receipt-company">{companyName}</div>
+          <div className="receipt-company-note">Freight forwarding and logistics</div>
+        </div>
+        <div className="receipt-title-block">
+          <div className="receipt-title">RECEIPT</div>
+          <div className="receipt-number">{receipt.receipt_no}</div>
+        </div>
+      </header>
+      <div className="receipt-rule" />
+      <div className="receipt-details-grid">
+        <div className="receipt-bill-to">
+          <div className="receipt-kicker">BILL TO</div>
+          <div className="receipt-client-name">{client?.full_name || receipt.client?.full_name}</div>
+          <div>{client?.phone || receipt.client?.phone || 'Phone not supplied'}</div>
+          <div className="receipt-mark">{client?.shipping_mark || receipt.client?.shipping_mark}</div>
+        </div>
+        <div className="receipt-meta">
+          <div><span>Issued</span><strong>{receipt.issued_at && format(new Date(receipt.issued_at), 'dd MMM yyyy')}</strong></div>
+          <div><span>Status</span><strong className={receipt.status === 'paid' ? 'receipt-paid' : 'receipt-unpaid'}>{receipt.status === 'paid' ? 'Paid' : 'Unpaid'}</strong></div>
+        </div>
+      </div>
+      <table className="receipt-items-table">
+        <thead><tr><th>Description</th><th>Packages</th><th>CBM / kg</th><th>Unit price</th><th>Amount</th></tr></thead>
+        <tbody>{items.map((item, i) => {
+          const hasMeasurement = Number(item.measurement) > 0
+          const quantity = Number(item.qty ?? item.quantity ?? 1) || 1
+          const measurement = hasMeasurement ? Number(item.measurement) : quantity
+          const measurementLabel = `${Number(measurement.toFixed(4))} ${item.measurement_unit || (hasMeasurement ? 'unit' : '')}`.trim()
+          const rate = Number(item.unit_price ?? item.rate ?? 0) || 0
+          const amount = Number(item.amount ?? (hasMeasurement ? measurement * rate : quantity * rate)) || 0
+          return (
+          <tr key={i}>
+            <td data-label="Description"><strong>{item.desc || item.description || 'Shipping service'}</strong>{item.container_no && <small className="receipt-item-container">Container / batch: {item.container_no}</small>}</td>
+            <td data-label="Packages">{hasMeasurement ? quantity : '—'}</td>
+            <td data-label="CBM / kg">{measurementLabel}</td>
+            <td data-label="Unit price">{formatMoney(rate, currency)}</td>
+            <td data-label="Amount">{formatMoney(amount, currency)}</td>
+          </tr>
+        )})}</tbody>
+      </table>
+      <div className="receipt-summary">
+        {receipt.discount > 0 && <div><span>Discount</span><strong>- {formatMoney(receipt.discount, currency)}</strong></div>}
+        <div className="receipt-total"><span>Total Due</span><strong>{formatMoney(receipt.total, currency)}</strong></div>
+      </div>
+      <footer className="receipt-footer">Thank you for choosing {companyName}. Keep this receipt for your records.</footer>
+    </div>
+  )
+}
+
+export function EmptyState({ icon = 'box', title = 'Nothing here', text = '' }) {
+  const IconComp = typeof icon === 'string' && Icons[icon] ? Icons[icon] : null
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon">
+        {IconComp ? <IconComp size={26} color="var(--t3)" /> : icon}
+      </div>
+      <div className="empty-state-title">{title}</div>
+      {text && <div className="empty-state-text">{text}</div>}
+    </div>
+  )
+}
+
+export function SkeletonList({ n = 3 }) {
+  return <>{Array.from({ length: n }).map((_, i) => <div key={i} className="skeleton" style={{ height: 80, marginBottom: 12 }} />)}</>
+}
+
+export function TopNav({ role, title, right }) {
+  return (
+    <div className="topnav">
+      <div>
+        <div className="topnav-sub">{role}</div>
+        <div className="topnav-title">{title}</div>
+      </div>
+      {right}
+    </div>
+  )
+}
+
+export function BottomNav({ tabs, active, onChange }) {
+  return (
+    <nav className="bottomnav">
+      {tabs.map(t => {
+        const on = active === t.id
+        // Icon can be a function component OR a lucide object component (forwardRef/memo).
+        // Render it as a component when it's a function or object; only treat strings/emoji as text.
+        const Icon = t.Icon
+        const isComponent = typeof Icon === 'function' || (typeof Icon === 'object' && Icon !== null)
+        return (
+          <button key={t.id} className={`bottomnav-item ${on ? 'active' : ''}`} onClick={() => onChange(t.id)}>
+            <span className="nav-icon-wrap">
+              {isComponent
+                ? <Icon size={20} color={on ? 'var(--teal-d)' : 'var(--t3)'} />
+                : <span style={{ fontSize: 18 }}>{Icon || t.icon}</span>}
+              {t.badge > 0 && <span className="bottomnav-badge">{t.badge > 99 ? '99+' : t.badge}</span>}
+            </span>
+            <span className="bottomnav-label">{t.label}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
+export function SectionHeader({ title, action }) {
+  return (
+    <div className="section-header">
+      <span className="section-title">{title}</span>
+      {action}
+    </div>
+  )
+}
+
+export function TabRow({ tabs, active, onChange }) {
+  return (
+    <div className="tab-row">
+      {tabs.map(t => (
+        <button key={t.id} className={`tab-btn ${active === t.id ? 'active' : ''}`} onClick={() => onChange(t.id)}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function Confirm({ open, title, message, onConfirm, onCancel, danger }) {
+  if (!open) return null
+  return (
+    <div className="modal-overlay">
+      <div className="modal-sheet">
+        <div className="modal-handle" />
+        <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>{danger ? '⚠️' : '❓'}</div>
+          <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>{title}</div>
+          <div style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 22 }}>{message}</div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-secondary btn-full" onClick={onCancel}>Cancel</button>
+            <button className={`btn btn-full ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm}>Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export const fmtDate = (d) => d ? format(new Date(d), 'dd MMM yyyy') : '—'
+export const fmtDateTime = (d) => d ? format(new Date(d), 'dd MMM yyyy, HH:mm') : '—'
+export const fmtAgo = (d) => d ? formatDistanceToNow(new Date(d), { addSuffix: true }) : ''
+export const formatMoney = (amount, currency = 'BWP') => {
+  const value = Number(amount || 0)
+  if (currency === 'BWP' || currency === 'P') {
+    return `P${value.toLocaleString('en-BW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+  return `${currency} ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
