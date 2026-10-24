@@ -39,7 +39,7 @@ class AppErrorBoundary extends Component {
 
 function Gate() {
   const { loading, activeRole } = useAuth()
-  const teamLoginRequested = ['#/admin-login', '#/staff-login'].includes(window.location.hash)
+  const teamLoginRequested = window.location.pathname.replace(/\/+$/, '') === '/admin' || ['#/admin-login', '#/staff-login'].includes(window.location.hash)
 
   if (loading) {
     return (

@@ -54,7 +54,7 @@ function SectionHeading({ eyebrow, title, text }) {
 
 export default function LoginPage() {
   const { signInStaff, signInClient } = useAuth()
-  const initialRole = window.location.hash === '#/admin-login' ? 'admin' : window.location.hash === '#/staff-login' ? 'staff' : window.location.hash === '#/client-login' ? 'client' : null
+  const initialRole = window.location.pathname.replace(/\/+$/, '') === '/admin' || window.location.hash === '#/admin-login' ? 'admin' : window.location.hash === '#/staff-login' ? 'staff' : window.location.hash === '#/client-login' ? 'client' : null
   const [view, setView] = useState(initialRole ? 'login' : 'home')
   const [mode, setMode] = useState(initialRole === 'admin' || initialRole === 'staff' ? 'staff' : 'client')
   const [loginRole, setLoginRole] = useState(initialRole || 'client')
@@ -71,7 +71,8 @@ export default function LoginPage() {
     setMode(role === 'client' ? 'client' : 'staff')
     setError('')
     setMenuOpen(false)
-    window.location.hash = `/${role}-login`
+    if (role === 'admin') window.history.replaceState(null, '', '/admin')
+    else window.location.hash = `/${role}-login`
     setView('login')
   }
 
