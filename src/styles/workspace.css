@@ -5,7 +5,9 @@
 @keyframes workspace-pulse { from { transform: scaleX(.3); opacity: .45; } to { transform: scaleX(1); opacity: 1; } }
 @media screen {
   .app-shell { height: 100dvh; }
-  .app-shell .page { min-height: 0; scrollbar-width: thin; }
+  .app-shell .page { min-height: 0; scrollbar-width: thin; scrollbar-gutter: stable; overflow-anchor: none; }
+  .app-shell .search-control { flex-shrink: 0; height: 48px; }
+  .app-shell .search-control > svg { flex-shrink: 0; }
   .app-shell .section-header { gap: 12px; flex-wrap: wrap; }
   .app-shell .section-header > * { min-width: 0; }
   .app-shell .btn { white-space: normal; text-align: center; }
