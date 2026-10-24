@@ -7,3 +7,43 @@
     font-size: 16px !important;
   }
 }
+
+/* Keep mobile controls steady as lists filter and empty states appear. */
+@media screen and (max-width: 999px) {
+  .app-shell > .topnav,
+  .app-shell > .bottomnav {
+    flex-shrink: 0;
+  }
+
+  .app-shell .page,
+  .modal-sheet {
+    scrollbar-gutter: stable;
+    overflow-anchor: none;
+  }
+
+  .hub-search,
+  .nm-search,
+  .store-search,
+  .cargo-chat-search {
+    min-width: 0;
+    min-height: 48px;
+    flex-shrink: 0;
+  }
+
+  .hub-search > svg,
+  .nm-search > svg,
+  .store-search > svg,
+  .cargo-chat-search > svg,
+  .cargo-chat-header,
+  .cargo-chat-compose {
+    flex-shrink: 0;
+  }
+
+  .hub-search input,
+  .nm-search input,
+  .store-search input,
+  .cargo-chat-search input {
+    min-width: 0;
+    min-height: 24px;
+  }
+}
