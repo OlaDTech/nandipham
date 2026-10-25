@@ -1,0 +1,101 @@
+.owner-home { min-height: 100svh; background: #fcf8f5; color: #452335; padding: 0 40px; }
+.owner-home-header { max-width: 1240px; margin: auto; height: 84px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e8dce0; }
+.owner-home-monogram { color: #8e284f; font: 500 27px Georgia, serif; letter-spacing: -2px; text-decoration: none; }
+.owner-home-monogram span { vertical-align: super; font: 9px Arial, sans-serif; letter-spacing: 0; margin-left: 4px; }
+.owner-home-header button { border: 0; background: transparent; color: #76485c; font: 500 12px Inter, sans-serif; cursor: pointer; min-height: 44px; }
+.owner-home-header button span { margin-left: 12px; }
+.owner-home-hero { text-align: center; max-width: 680px; margin: auto; padding: 38px 0 30px; }
+.owner-home-hero h1 { font: 400 clamp(56px, 7vw, 86px)/1.1 Georgia, serif; color: #452335; letter-spacing: -3px; margin: 0 0 12px; }
+.owner-home-hero h1 em { color: #b52c68; font-weight: 400; }
+.owner-home-tagline { font: 600 10px/1.6 Inter, sans-serif; letter-spacing: 3.5px; color: #94576e; margin: 0; }
+.owner-home-portrait { width: min(100%, 370px); margin: 28px auto 24px; background: #e5d9d5; overflow: hidden; border-radius: 180px 180px 4px 4px; }
+.owner-home-portrait img { display: block; width: 100%; height: auto; aspect-ratio: 4/5; object-fit: cover; object-position: center 23%; }
+.owner-home-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 370px; margin: auto; }
+.owner-home-contact, .owner-home-start { min-height: 49px; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 12px 20px; border: 1px solid #d8bcc9; border-radius: 4px; background: transparent; color: #872750; text-decoration: none; font: 600 12px/1.4 Inter, sans-serif; cursor: pointer; }
+.owner-home-start { border-color: #b52c68; background: #b52c68; color: #fff; }
+.owner-home-start:hover { background: #982254; }
+.owner-home-contact:hover { background: #f5e8ee; }
+.owner-home :focus-visible { outline: 2px solid #982254; outline-offset: 4px; }
+.owner-home-note { margin: 16px 0 0; color: #8a717e; font-size: 11px; line-height: 1.6; }
+.owner-home-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; max-width: 1240px; margin: auto; border-top: 1px solid #e8dce0; padding: 20px 0; font-size: 10px; color: #967c88; }
+.owner-contact-dialog { position: fixed; inset: 0; margin: auto; width: min(420px, calc(100% - 32px)); padding: 36px; border: 1px solid #e4d1da; border-radius: 12px; color: #452335; background: #fcf8f5; }
+.owner-contact-dialog::backdrop { background: #341b2a80; }
+.owner-contact-dialog h2 { font: 400 32px Georgia, serif; margin: 16px 0; }
+.owner-contact-dialog > p:not(.owner-home-tagline) { font-size: 14px; line-height: 1.7; margin: 12px 0; color: #785866; }
+.owner-contact-dialog .owner-home-start { width: 100%; margin-top: 24px; }
+.owner-contact-close { position: absolute; right: 10px; top: 8px; width: 40px; height: 40px; border: 0; background: none; color: #785866; font-size: 26px; cursor: pointer; }
+@media (max-width: 600px) {
+  .owner-home { padding: 0 22px; }
+  .owner-home-header { height: 68px; }
+  .owner-home-hero { padding-top: 30px; }
+  .owner-home-hero h1 { font-size: clamp(48px, 13vw, 65px); letter-spacing: -2px; }
+  .owner-home-tagline { font-size: 9px; letter-spacing: 2.4px; }
+  .owner-home-portrait { width: min(100%, 320px); margin-top: 24px; }
+  .owner-home-actions { max-width: 320px; }
+  .owner-home-contact, .owner-home-start { padding: 12px; gap: 12px; }
+}
+
+/* Portrait-led introduction: restrained rose, warm paper, and a clear route. */
+.owner-home { background: #faf5f2; }
+.owner-home-header { height: 76px; max-width: 1120px; }
+.owner-home-monogram { font-size: 30px; }
+.owner-home-header button { font-size: 11px; letter-spacing: .2px; }
+.owner-home-hero { max-width: 880px; padding: 34px 0 36px; }
+.owner-home-eyebrow { display: block; color: #987581; font-size: 8px; font-weight: 600; letter-spacing: 3px; margin-bottom: 13px; }
+.owner-home-hero h1 { font-size: clamp(62px, 7.5vw, 100px); letter-spacing: -4px; margin-bottom: 12px; }
+.owner-home-hero h1 em { font-weight: 400; }
+.owner-home-tagline { font-size: 10px; letter-spacing: 3.2px; }
+.owner-home-photo-stage { position: relative; width: min(100%, 660px); margin: 30px auto 26px; }
+.owner-home-portrait { position: relative; width: min(100%, 400px); margin: auto; overflow: visible; border-radius: 180px 180px 8px 8px; background: #fff; padding: 8px; border: 1px solid #e0c8d2; box-shadow: 0 12px 35px #72304d0c; }
+.owner-home-portrait::before { content: ''; position: absolute; inset: -9px 12px 10px -9px; border: 1px solid #e4d4cc; border-radius: 190px 190px 8px 8px; pointer-events: none; z-index: 0; }
+.owner-home-portrait > img { position: relative; width: 100%; aspect-ratio: 1 / 1.03; border-radius: 174px 174px 2px 2px; object-position: center 25%; }
+.owner-home-route { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 14px 12px; background: #fff; }
+.owner-home-country { display: flex; align-items: center; text-align: left; gap: 9px; flex-shrink: 0; }
+.owner-home-country > img { display: block; width: 32px; height: 22px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px #00000008; }
+.owner-home-country small { display: block; color: #a18a93; font: 600 7px/1.5 Inter, sans-serif; letter-spacing: 1.4px; }
+.owner-home-country strong { display: block; font: 500 12px/1.5 Inter, sans-serif; color: #513041; }
+.owner-home-route-line { position: relative; flex: 1; min-width: 20px; border-top: 1px dashed #d6b6c5; }
+.owner-home-route-line > span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #fff; color: #b52c68; padding: 0 7px; font-size: 18px; }
+.owner-home-side { position: absolute; top: 48%; color: #a58a95; font-size: 8px; letter-spacing: 2.4px; writing-mode: vertical-rl; }
+.owner-home-side-left { left: 57px; transform: rotate(180deg); }
+.owner-home-side-right { right: 57px; }
+.owner-home-actions { max-width: 400px; gap: 12px; }
+.owner-home-contact, .owner-home-start { min-height: 52px; border-radius: 5px; font-size: 12px; transition: background-color .18s ease; }
+.owner-home-contact { background: #fff9; }
+.owner-home-start { box-shadow: 0 4px 12px #b52c6815; }
+.owner-home-note { line-height: 1.9; margin-top: 19px; color: #947986; font-size: 10px; }
+.owner-home-footer { max-width: 1120px; font-size: 9px; letter-spacing: .4px; padding: 22px 0; }
+@media (max-width: 600px) {
+  .owner-home { padding: 0 24px; }
+  .owner-home-header { height: 65px; }
+  .owner-home-hero { padding-top: 30px; }
+  .owner-home-eyebrow { font-size: 7px; letter-spacing: 2.4px; margin-bottom: 14px; }
+  .owner-home-hero h1 { font-size: clamp(53px, 14vw, 74px); letter-spacing: -2.6px; }
+  .owner-home-tagline { font-size: 8px; letter-spacing: 2.5px; }
+  .owner-home-photo-stage { width: min(100%, 340px); margin-top: 28px; margin-bottom: 22px; }
+  .owner-home-side { display: none; }
+  .owner-home-portrait { width: 100%; padding: 7px; }
+  .owner-home-portrait > img { aspect-ratio: 4 / 4.5; }
+  .owner-home-route { padding: 16px 7px 10px; gap: 10px; }
+  .owner-home-country { gap: 7px; }
+  .owner-home-country strong { font-size: 11px; }
+  .owner-home-country > img { width: 29px; height: 20px; }
+  .owner-home-actions { max-width: 340px; }
+}
+
+/* Keep supporting text readable on phones and desktop. */
+.owner-home-header button { font-size: 14px; }
+.owner-home-eyebrow { font-size: 11px; letter-spacing: 2px; }
+.owner-home-tagline { font-size: 13px; letter-spacing: 2px; }
+.owner-home-country small { font-size: 10px; }
+.owner-home-country strong { font-size: 14px; }
+.owner-home-contact, .owner-home-start { font-size: 15px; }
+.owner-home-note { font-size: 14px; line-height: 1.7; }
+.owner-home-footer { font-size: 12px; }
+@media (max-width: 600px) {
+ .owner-home-eyebrow { font-size: 10px; letter-spacing: 1.8px; }
+ .owner-home-tagline { font-size: 11px; letter-spacing: 1.7px; }
+ .owner-home-country small { font-size: 10px; }
+ .owner-home-country strong { font-size: 13px; }
+ .owner-home-footer { font-size: 11px; }
+}

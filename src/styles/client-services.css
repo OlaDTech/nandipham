@@ -1,0 +1,28 @@
+.client-services { margin: 0 0 28px; }
+.client-services-heading { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 0 0 20px; }
+.client-services-heading span { font-size: 11px; letter-spacing: 1.6px; font-weight: 600; color: #9b3560; }
+.client-services-heading h2 { font: 400 32px/1.2 Georgia, serif; color: #432139; margin: 8px 0 0; }
+.client-services-heading > p { font-size: 14px; color: #806677; margin: 0; }
+.client-service-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.client-service-card { display: flex; flex-direction: column; min-width: 0; text-align: left; padding: 0; background: #fff; border: 1px solid #e5d4dc; border-radius: 8px; overflow: hidden; cursor: pointer; color: #432139; }
+.client-service-photo { overflow: hidden; aspect-ratio: 1.6; background: #f0e6e9; }
+.client-service-photo img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .2s ease; }
+.client-service-card:hover .client-service-photo img { transform: scale(1.035); }
+.client-service-copy { display: flex; flex-direction: column; flex: 1; padding: 20px; }
+.client-service-copy h3 { font: 400 23px/1.2 Georgia, serif; margin: 0 0 10px; }
+.client-service-copy p { font: 400 14px/1.6 Inter, sans-serif; color: #806677; margin: 0 0 20px; }
+.client-service-copy > span { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: auto; font: 600 13px/1.5 Inter, sans-serif; color: #a12659; }
+.client-service-card:focus-visible { outline: 3px solid #b52c68; outline-offset: 3px; }
+.china-accompany { max-width: 900px; margin: auto; }
+.china-accompany-photo { display: block; width: 100%; height: auto; aspect-ratio: 2.2; object-fit: cover; border-radius: 8px; }
+.china-accompany-copy { padding: 28px 0; max-width: 660px; }
+.china-accompany-copy h1 { font: 400 36px/1.2 Georgia, serif; margin: 12px 0 20px; }
+.china-accompany-copy p { font-size: 16px; line-height: 1.8; margin: 0 0 18px; color: #755d69; }
+.china-accompany-copy .btn { margin-top: 8px; }
+@media (max-width: 760px) {
+  .client-service-grid { grid-template-columns: 1fr; gap: 16px; }
+  .client-service-photo { aspect-ratio: 1.9; }
+  .client-service-copy { padding: 20px; }
+  .client-service-copy h3 { font-size: 25px; }
+  .china-accompany-photo { aspect-ratio: 1.6; }
+}

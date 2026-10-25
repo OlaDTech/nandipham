@@ -1,3 +1,6 @@
+import ClientShipping from '../../components/ClientShipping'
+import { ChinaAccompany } from '../../components/ClientServices'
+import AirShippingRates from '../../components/AirShippingRates'
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { Home, Package, Tag, ShoppingBag, ShoppingCart, MessageCircle, LogOut, Warehouse, Ship, CheckCircle2, ReceiptText, MoreHorizontal, ArrowRight, ArrowLeft, QrCode, Copy, Clipboard, RefreshCw, Download, Wallet, Upload, Plus, Trash2, Bell } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
@@ -37,6 +40,8 @@ const TOP_UP_DEFAULT = {
 export default function ClientApp() {
   const { clientUser, clientSessionToken, signOut } = useAuth()
   const [tab, setTab] = useState('home')
+  const pageRef = useRef(null)
+  useEffect(() => { pageRef.current?.scrollTo({ top: 0 }) }, [tab])
   const [goods, setGoods] = useState([])
   const [announcements, setAnnouncements] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -322,12 +327,12 @@ export default function ClientApp() {
 
   const tabs = [
     { id: 'home', label: 'Home', Icon: Home },
-    { id: 'goods', label: 'My Goods', Icon: Package },
-    { id: 'receipts', label: 'Receipts', Icon: ReceiptText },
+    { id: 'shipping', label: 'Shipping', Icon: Ship },
     { id: 'chat', label: 'Messages', Icon: MessageCircle, badge: messages.filter(message => message.sender !== 'client' && !message.is_read).length },
+    { id: 'account', label: 'Account', Icon: UserRound },
     { id: 'more', label: 'More', Icon: MoreHorizontal },
   ]
-  const activeNav = ['store', 'label', 'suppliers', 'purchase', 'wallet', 'account'].includes(tab) ? 'more' : tab
+  const activeNav = ['goods', 'receipts', 'label', 'wallet'].includes(tab) ? 'shipping' : ['store', 'suppliers', 'purchase', 'accompany'].includes(tab) ? 'more' : tab
 
   const inWarehouse = goods.filter(g => g.status === 'in_warehouse').length
   const inTransit = goods.filter(g => g.status === 'in_transit').length
@@ -337,14 +342,16 @@ export default function ClientApp() {
   const LabelMethodPicker = () => <div className="tab-row" style={{ marginBottom: 14 }}><button className={`tab-btn ${labelShipmentType === 'sea' ? 'active' : ''}`} onClick={() => setLabelShipmentType('sea')}>Sea Freight</button><button className={`tab-btn ${labelShipmentType === 'air' ? 'active' : ''}`} onClick={() => setLabelShipmentType('air')}>Air Freight</button></div>
 
   return (
-    <div className={`app-shell client-app workspace-shell${tab === 'home' ? ' client-hub' : ''}${tab === 'store' ? ' store-shell' : ''}`}>
+    <div className={`app-shell client-app workspace-shell${['home', 'shipping'].includes(tab) ? ' client-hub' : ''}${tab === 'store' ? ' store-shell' : ''}`}>
       <WorkspaceNav active={tab} onChange={setTab} name={clientUser?.full_name} role="Client portal" onSignOut={signOut} items={[
         ...tabs.filter(item=>item.id!=='more'),
         {id:'store',label:'Shop products',Icon:ShoppingBag,group:'Business'},
+        {id:'accompany',label:'China accompany',Icon:Warehouse,group:'Business'},
         {id:'purchase',label:'Buy for me',Icon:ShoppingCart,group:'Business'},
         {id:'wallet',label:'Wallet',Icon:Wallet,group:'Business'},
         {id:'label',label:'Shipping label',Icon:Tag,group:'Account'},
-        {id:'account',label:'Account & security',Icon:UserRound,group:'Account'},
+        {id:'goods',label:'My goods',Icon:Package,group:'Operations'},
+        {id:'receipts',label:'Receipts',Icon:ReceiptText,group:'Operations'},
         {id:'suppliers',label:'Suppliers',Icon:Warehouse,group:'Account'},
       ]}/>
       <TopNav role="Client Portal" title={settings.company_name || 'NandiphaM Logistics'}
@@ -353,21 +360,24 @@ export default function ClientApp() {
             <div className="client-header-avatar">
               {clientUser.full_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
             </div>
-            <button className="client-notification-toggle" onClick={() => setTab('home')} title="Notification settings are on Home" aria-label="Notification settings on Home"><Bell size={17} /></button>
+            <button className="client-notification-toggle" onClick={() => setTab('account')} title="Notification settings" aria-label="Notification settings"><Bell size={17} /></button>
             <button className="client-refresh" onClick={refreshData} disabled={refreshing} title="Refresh data" aria-label="Refresh data"><RefreshCw size={17} style={{ opacity: refreshing ? 0.55 : 1 }} /></button>
             <button className="client-logout" onClick={signOut} title="Log out" aria-label="Log out"><LogOut size={18} /></button>
           </div>
         }
       />
 
-      <div className={`page ${tab === 'chat' ? 'page-chat' : ''}`}>
+      <div ref={pageRef} className={`page ${tab === 'chat' ? 'page-chat' : ''}`}>
 
-        {tab === 'home' && <ClientHome client={clientUser} goods={goods} receipts={receipts} announcements={announcements} unread={unreadMsgs} wallet={wallet} walletLoading={walletLoading} loading={loading} navigate={setTab} showLabel={()=>setShowLabel(true)} selectGoods={setSelectedGoods}/>}
-        {tab === 'home' && <div style={{margin:'0 14px 24px'}}><PushNotifications /></div>}
+        {tab === 'home' && <ClientHome client={clientUser} navigate={setTab} />}
+        {tab === 'shipping' && <ClientShipping settings={settings} client={clientUser} goods={goods} receipts={receipts} announcements={announcements} unread={unreadMsgs} wallet={wallet} walletLoading={walletLoading} loading={loading} navigate={setTab} showLabel={()=>setShowLabel(true)} selectGoods={setSelectedGoods}/>}
+
+        {tab === 'accompany' && <ChinaAccompany onBack={() => setTab('home')} onEnquire={() => { setMsgText(current => current || 'Hello, I would like to enquire about China Accompany Services. My planned travel dates are: \nProducts I want to source: \nSupport I need: '); setTab('chat') }} />}
 
         {/* MY GOODS */}
         {tab === 'goods' && (
           <>
+            <AirShippingRates settings={settings} loading={loading} onEnquire={() => setTab('chat')} />
             <SectionHeader title={`My Goods (${goods.length})`} />
             {loading ? <SkeletonList /> : goods.length === 0 ? (
               <EmptyState icon="box" title="No shipments yet" text="Your goods will appear here once recorded by our warehouse team in China." />
@@ -410,7 +420,7 @@ export default function ClientApp() {
         )}
 
         {tab === 'store' && <Suspense fallback={<SkeletonList n={3}/>}><Storefront /></Suspense>}
-        {tab === 'account' && <><button className="section-back" onClick={()=>setTab('more')}><ArrowLeft size={16}/>Back</button><ClientAccount /></>}
+        {tab === 'account' && <><button className="section-back" onClick={()=>setTab('home')}><ArrowLeft size={16}/>Back to services</button><ClientAccount /><PushNotifications /></>}
         {tab === 'more' && (
           <>
             <SectionHeader title="More" />

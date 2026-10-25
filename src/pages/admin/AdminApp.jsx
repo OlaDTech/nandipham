@@ -315,13 +315,19 @@ export default function AdminApp() {
   const saveSettings = async () => {
     try {
       const nextSettings = settingsWithSeparateWarehouses(settingsForm)
-      await Promise.all(Object.entries(nextSettings).map(([key, value]) =>
+      for (const key of ['air_rate_kg', 'sea_rate_cbm', 'sea_rate_kg']) {
+        const value = String(nextSettings[key] || '').trim()
+        if (value && (!Number.isFinite(Number(value)) || Number(value) <= 0)) throw new Error('Freight rates must be greater than zero, or left blank.')
+      }
+      const results = await Promise.all(Object.entries(nextSettings).map(([key, value]) =>
         supabase.from('settings').upsert({ key, value: value || '', updated_at: new Date().toISOString() }, { onConflict: 'key' })
       ))
+      const failed = results.find(result => result.error)
+      if (failed) throw failed.error
       setSettings(nextSettings)
       setSettingsForm(nextSettings)
       toast.success('Settings saved — all shipping labels updated!')
-    } catch { toast.error('Failed to save settings') }
+    } catch (error) { toast.error(error.message || 'Failed to save settings') }
   }
 
   const openReceiptBuilder = goodsRecord => {
@@ -1735,12 +1741,18 @@ export default function AdminApp() {
 
             <div className="card">
               <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--navy)', marginBottom: 16 }}>Rates</div>
-              {[['sea_rate_cbm','Sea Freight Rate (P/CBM)'],['sea_rate_kg','Sea Surcharge (P/kg)'],['air_rate_kg','Air Freight Rate (P/kg)']].map(([k,l]) => (
+              {[['sea_rate_cbm','Sea Freight Rate (P/CBM)'],['sea_rate_kg','Sea Surcharge (P/kg)'],['air_rate_kg','Client Air Shipping Price (BWP/kg)']].map(([k,l]) => (
                 <div key={k} className="input-group">
-                  <label className="input-label">{l}</label>
-                  <input className="input-field" type="number" step="0.01" value={settingsForm[k] || ''} onChange={e => setSettingsForm(p => ({...p, [k]: e.target.value}))} />
+                  <label className="input-label" htmlFor={`rate-${k}`}>{l}</label>
+                  <input id={`rate-${k}`} className="input-field" type="number" min="0.01" step="0.01" value={settingsForm[k] || ''} onChange={e => setSettingsForm(p => ({...p, [k]: e.target.value}))} />
                 </div>
               ))}
+            </div>
+
+            <div className="card">
+              <label className="input-label" htmlFor="air-rate-notes">Air shipping notes for clients</label>
+              <textarea id="air-rate-notes" className="input-field" rows={3} maxLength={1000} placeholder="Add any minimum weight, conditions or exclusions clients should know." value={settingsForm.air_rate_notes || ''} onChange={e => setSettingsForm(p => ({ ...p, air_rate_notes: e.target.value }))} />
+              <p style={{ fontSize: 13, lineHeight: 1.6, marginTop: 10, color: 'var(--muted)' }}>The air shipping price and these notes appear on the client homepage and Shipping page after you save. Leave the rate blank to show ?Contact the team? instead of a price.</p>
             </div>
 
             <button className="btn btn-primary btn-full" onClick={saveSettings} style={{ padding: 14, fontSize: 16 }}>Save All Settings</button>
