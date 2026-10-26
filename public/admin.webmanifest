@@ -1,0 +1,11 @@
+{
+  "id": "/admin",
+  "name": "NandiphaM Admin",
+  "short_name": "NM Admin",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#b52c68",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

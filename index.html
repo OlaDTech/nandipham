@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Choose the install identity before the application loads. Client and
+      // admin shortcuts must not share the same homepage start URL.
+      const adminShortcut = location.pathname.replace(/\/+$/, '') === '/admin'
+        || location.hash === '#/admin-login'
+      const manifest = document.createElement('link')
+      manifest.rel = 'manifest'
+      manifest.href = adminShortcut ? '/admin.webmanifest' : '/manifest.webmanifest'
+      document.head.appendChild(manifest)
+      const appTitle = document.createElement('meta')
+      appTitle.name = 'apple-mobile-web-app-title'
+      appTitle.content = adminShortcut ? 'NandiphaM Admin' : 'NandiphaM'
+      document.head.appendChild(appTitle)
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#b52c68" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
